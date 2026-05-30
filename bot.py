@@ -12,8 +12,8 @@ from retriever import SchemeRetriever, detect_state, translate_to_english, trans
 import logger
 
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-print(f"[startup] TOKEN loaded, last 5 chars: ...{TOKEN[-5:]}")
+TOKEN = os.environ.get("TELEGRAM_TOKEN") or os.environ.get("BOT_TOKEN") or ""
+print(f"[startup] TOKEN={'SET ...'+TOKEN[-5:] if TOKEN else 'NOT SET — check Railway env vars'}")
 retriever = SchemeRetriever("scheme_embeddings.npz")
 whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
 
