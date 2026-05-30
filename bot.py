@@ -12,7 +12,7 @@ from retriever import SchemeRetriever, detect_state, translate_to_english, trans
 import logger
 
 
-TOKEN    = "8685315092:AAGJMx-9uDQj5F6G0HLatRRRXCM-g7ovPOY"
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
 retriever = SchemeRetriever("scheme_embeddings.npz")
 whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
 
