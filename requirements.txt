@@ -1,0 +1,6 @@
+python-telegram-bot
+fastembed==0.2.7
+numpy==1.26.4
+deep-translator
+langdetect
+faster-whisper
