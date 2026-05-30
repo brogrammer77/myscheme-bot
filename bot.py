@@ -118,7 +118,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     hits = await _search_and_reply(update.message, user_id, query, now)
 
-    logger.write({
+    entry = {
         "session_id":  session_id,
         "timestamp":   timestamp,
         "user_id":     user_id,
@@ -126,7 +126,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "query":       query,
         "results":     [{"name": h["scheme_name"], "slug": h["slug"],
                          "score": round(h["score"], 4), "state": h["state"]} for h in hits],
-    })
+    }
+    logger.write(entry)
+    if logger.LOG_CHAT_ID:
+        try:
+            await context.bot.send_message(chat_id=logger.LOG_CHAT_ID, text=logger.format_entry(entry))
+        except Exception as e:
+            print(f"[{session_id}] tg log failed: {e}")
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id    = update.message.from_user.id
@@ -160,6 +166,17 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"[{session_id}] normalised to {mapped_lang}: {query!r}")
         except Exception:
             query = raw_transcript
+        # send audio to log channel while temp file still exists
+        if logger.LOG_CHAT_ID:
+            try:
+                with open(tmp_path, "rb") as audio:
+                    await context.bot.send_voice(
+                        chat_id=logger.LOG_CHAT_ID,
+                        voice=audio,
+                        caption=f"🎙 {session_id} | whisper={whisper_lang}→{mapped_lang}\nraw: {raw_transcript}\nquery: {query}",
+                    )
+            except Exception as e:
+                print(f"[{session_id}] tg audio log failed: {e}")
     except Exception as e:
         await update.message.reply_text("⚠️ Could not process your voice message. Please try again.")
         print(f"[{session_id}] Whisper error: {e}")
@@ -204,7 +221,13 @@ async def handle_voice_callback(update: Update, context: ContextTypes.DEFAULT_TY
         await cb.edit_message_text(
             "❌ No problem — please type your query as a text message or send a new voice note."
         )
-        logger.write({**session, "user_confirmed": False, "results": []})
+        entry = {**session, "user_confirmed": False, "results": []}
+        logger.write(entry)
+        if logger.LOG_CHAT_ID:
+            try:
+                await context.bot.send_message(chat_id=logger.LOG_CHAT_ID, text=logger.format_entry(entry))
+            except Exception as e:
+                print(f"[{session.get('session_id')}] tg log failed: {e}")
         print(f"[{session.get('session_id')}] user cancelled voice query")
         return
 
@@ -217,12 +240,18 @@ async def handle_voice_callback(update: Update, context: ContextTypes.DEFAULT_TY
     print(f"[{session.get('session_id')}] user confirmed, searching: {query!r}")
     hits = await _search_and_reply(cb.message, cb.from_user.id, query, time.time())
 
-    logger.write({
+    entry = {
         **session,
         "user_confirmed": True,
         "results": [{"name": h["scheme_name"], "slug": h["slug"],
                      "score": round(h["score"], 4), "state": h["state"]} for h in hits],
-    })
+    }
+    logger.write(entry)
+    if logger.LOG_CHAT_ID:
+        try:
+            await context.bot.send_message(chat_id=logger.LOG_CHAT_ID, text=logger.format_entry(entry))
+        except Exception as e:
+            print(f"[{session.get('session_id')}] tg log failed: {e}")
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()
