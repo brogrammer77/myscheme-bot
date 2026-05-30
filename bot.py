@@ -13,6 +13,7 @@ import logger
 
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
+print(f"[startup] TOKEN loaded, last 5 chars: ...{TOKEN[-5:]}")
 retriever = SchemeRetriever("scheme_embeddings.npz")
 whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
 
